@@ -128,6 +128,7 @@ def listener():
     # name for our 'listener' node so that multiple listeners can
     # run simultaneously.
     rospy.init_node('central', anonymous=True)
+    rate = rospy.Rate(20.0)
 
     
     markers = {}
@@ -306,6 +307,8 @@ def listener():
 
             waypoints_publisher.publish(markerArray2)
             waypoints_publisher_text.publish(markerArray3)
+
+    rate.sleep()
 
         
 
