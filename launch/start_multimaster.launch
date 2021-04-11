@@ -1,0 +1,4 @@
+<launch>
+  <node name="master_discovery" pkg="fkie_master_discovery" type="master_discovery" > </node>
+</launch>
+

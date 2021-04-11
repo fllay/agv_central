@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+import rospy
+
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
+from geometry_msgs.msg import Quaternion, Pose, Point, Vector3, PoseStamped, PoseWithCovarianceStamped, PoseWithCovariance
+from std_msgs.msg import Header, ColorRGBA
+import time
+import Queue
+import roslaunch
+
+from agv_central.srv import sync, syncResponse
+
+q_maker = Queue.Queue()
+q_sync = Queue.Queue()
+
+robot_names = ['eru', 'b]
+
+class markerSub:
+
+    def __init__(self, topic):
+        self.sub = rospy.Subscriber(topic, Marker, self.callback)
+        self.count = 0
+        
+    def callback(self,data):
+        
+        self.count = self.count + 1
+        if self.count == 5:
+            self.count = 0
+            #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.text) 
+            q_maker.put(data)
+
+
+def turn_sync_on_off(mess):
+    print mess
+    q_sync.put(mess)
+    return  syncResponse("OK")
+
+def listener():
+
+    # In ROS, nodes are uniquely named. If two nodes with the same
+    # name are launched, the previous one is kicked off. The
+    # anonymous=True flag means that rospy will choose a unique
+    # name for our 'listener' node so that multiple listeners can
+    # run simultaneously.
+    rospy.init_node('central', anonymous=True)
+
+    
+    markers = {}
+    markerArray = MarkerArray()
+    markerArrayText = MarkerArray()
+    
+    agv_location_publisher = rospy.Publisher('visualization_marker_array', MarkerArray,  queue_size=5)
+    agv_location_text_publisher = rospy.Publisher('visualization_marker_array_text', MarkerArray,  queue_size=5)
+
+    service_sync=rospy.Service('syncs_service',sync,turn_sync_on_off)
+
+    isSyncRunning = False
+    
+
+    for n in robot_names:
+        topic = n+"/visualization_marker"
+        markers[n] = Marker()
+        markerArray.markers.append(Marker())
+        markerArrayText.markers.append(Marker())
+        obc = markerSub(topic)
+    
+    
+
+    while not rospy.is_shutdown():
+        if not q_maker.empty():
+            mmk =  q_maker.get()
+            markers[mmk.text] = mmk
+            idx = robot_names.index(mmk.text)
+            markerArray.markers[idx] = mmk
+            agv_location_publisher.publish(markerArray)
+
+            ik_pose = mmk.pose
+            ik_pose.position.z = ik_pose.position.z + 0.1
+ 
+            markerArrayText.markers[idx] = Marker(
+                    type=Marker.TEXT_VIEW_FACING,
+                    id=idx,
+                    pose=ik_pose,
+                    scale=Vector3(0.3, 0.3, 0.3),
+                    header=Header(frame_id='map'),
+                    color=ColorRGBA(0.0, 0.1, 1.0, 1.0),
+                    text=mmk.text)
+            agv_location_text_publisher.publish(markerArrayText)
+            #print markerArray
+        if not q_sync.empty():
+            ss = q_sync.get()
+            print ss
+            if ss.onezero == 1:
+                if isSyncRunning == False:
+                    
+                    uuid2 = roslaunch.rlutil.get_or_generate_uuid(None, False)
+                    roslaunch.configure_logging(uuid2)
+                    #hostname = socket.gethostname()
+                   
+                    cli_args2 = ["/home/pi/catkin_ws/src/agv_central/launch/sync_topic.launch", "sync_topics:=" + "['/eru/visualization_marker']"]
+                    roslaunch_args2 = cli_args2[1:]
+                    roslaunch_file2 = [(roslaunch.rlutil.resolve_launch_arguments(cli_args2)[0], roslaunch_args2)]
+                    launch_nav2 = roslaunch.parent.ROSLaunchParent(uuid2, roslaunch_file2)  #map_file
+                    launch_nav2.start()
+
+
+
+                    isSyncRunning = True
+                print "Offfff"
+            else:
+                if isSyncRunning == True:
+                    
+                    launch_nav2.shutdown()
+                    isSyncRunning = False
+                    print("stop")
+                
+                print "onnnnnnn"
+
+        
+
+    # spin() simply keeps python from exiting until this node is stopped
+    #rospy.spin()
+
+if __name__ == '__main__':
+    listener()

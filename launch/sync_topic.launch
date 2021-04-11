@@ -1,0 +1,4 @@
+<launch>
+  <node name="master_sync" pkg="fkie_master_sync" type="master_sync" > </node>
+   <rosparam param="ignore_nodes"> ['/amcl','/base_footprint_to_base_link','/agv_interface','/base_footprint_to_imu_link','/base_link_to_laser','/ekf_localization','/interactive_marker_proxy','/laser_filter','/lino_base_node','/map_server','/move_base','/rosbridge_websocket','/rosserial_lino','/rplidar_node','/tf2_web_republisher'] </rosparam>
+</launch>
