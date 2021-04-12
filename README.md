@@ -68,3 +68,35 @@ Connections:
     * transport: TCPROS
 
 ```
+
+
+```/home/pi/catkin_ws/src/mqtt_bridge/config/demo_params.yaml```
+
+
+```
+mqtt:
+  client:
+    protocol: 4      # MQTTv311
+  connection:
+    host: localhost
+    port: 1883
+    keepalive: 60
+  private_path: device/001
+#serializer: json:dumps
+#deserializer: json:loads
+bridge:
+  # ping pong
+
+  - factory: mqtt_bridge.bridge:MqttToRosBridge
+    msg_type: visualization_msgs.msg:Marker
+    topic_from: /eru/visualization_marker
+    topic_to: /eru/visualization_marker
+
+
+  - factory: mqtt_bridge.bridge:MqttToRosBridge
+    msg_type: visualization_msgs.msg:Marker
+    topic_from: /bot1/visualization_marker
+    topic_to: /bot1/visualization_marker
+
+```
+
