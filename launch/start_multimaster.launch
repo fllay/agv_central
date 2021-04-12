@@ -1,4 +1,11 @@
 <launch>
-  <node name="master_discovery" pkg="fkie_master_discovery" type="master_discovery" > </node>
+  <node pkg="rosbridge_server" type="rosbridge_websocket" name="rosbridge_websocket"/>
+  <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
+  <node pkg="agv_central" type="central.py" name="central" />
+   <arg name="use_tls" default="false" />
+  <node name="mqtt_bridge" pkg="mqtt_bridge" type="mqtt_bridge_node.py" respawn="true" respawn_delay="30" output="screen">
+    <rosparam command="delete" param="" />
+    <rosparam command="load" file="$(find mqtt_bridge)/config/demo_params.yaml" />
+    <rosparam if="$(arg use_tls)" command="load" ns="mqtt" file="$(find mqtt_bridge)/config/tls_params.yaml" />
+  </node>
 </launch>
-
